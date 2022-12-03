@@ -215,7 +215,7 @@ int JoltPhysicsCollision::CollideWrite( char *pDest, CPhysCollide *pCollide, boo
 	return 0;
 }
 
-CPhysCollide *JoltPhysicsCollision::UnserializeCollide( char *pBuffer, int size, int index )
+CPhysCollide *JoltPhysicsCollision::UnserializeCollide( const char *pBuffer, int size, int index )
 {
 	Log_Stub( LOG_VJolt );
 	return nullptr;

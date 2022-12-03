@@ -113,7 +113,7 @@ public:
 
 	int				CollideSize( CPhysCollide *pCollide ) override;
 	int				CollideWrite( char *pDest, CPhysCollide *pCollide, bool bSwap = false ) override;
-	CPhysCollide	*UnserializeCollide( char *pBuffer, int size, int index ) override;
+	CPhysCollide	*UnserializeCollide( const char *pBuffer, int size, int index ) override;
 
 	float			CollideVolume( CPhysCollide *pCollide ) override;
 	float			CollideSurfaceArea( CPhysCollide *pCollide ) override;
