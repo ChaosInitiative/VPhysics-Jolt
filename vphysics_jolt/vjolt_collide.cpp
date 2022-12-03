@@ -813,7 +813,7 @@ int JoltPhysicsCollision::CollideWrite( char *pDest, CPhysCollide *pCollide, boo
 	return writer.TellMaxPut();
 }
 
-CPhysCollide *JoltPhysicsCollision::UnserializeCollide( char *pBuffer, int size, int index )
+CPhysCollide *JoltPhysicsCollision::UnserializeCollide( const char *pBuffer, int size, int index )
 {
 	return ivp_compat::Deserialize( pBuffer, size, index );
 }
