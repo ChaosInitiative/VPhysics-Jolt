@@ -177,7 +177,7 @@ public:
 
 	bool			TraceBoxAA( const Ray_t &ray, const CPhysCollide *pCollide, trace_t *ptr ) override_csgo;
 
-	void			DuplicateAndScale( vcollide_t *pOut, const vcollide_t *pIn, float flScale ) override_csgo;
+	void			DuplicateAndScale( vcollide_t *pOut, const vcollide_t *pIn, const Vector &vecScale ) override_csgo;
 
 public:
 	static JoltPhysicsCollision& GetInstance() { return s_PhysicsCollision; }
