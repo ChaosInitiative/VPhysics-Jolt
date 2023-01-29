@@ -933,14 +933,14 @@ bool JoltPhysicsCollision::TraceBoxAA( const Ray_t &ray, const CPhysCollide *pCo
 
 //-------------------------------------------------------------------------------------------------
 
-void JoltPhysicsCollision::DuplicateAndScale( vcollide_t *pOut, const vcollide_t *pIn, float flScale )
+void JoltPhysicsCollision::DuplicateAndScale( vcollide_t *pOut, const vcollide_t *pIn, const Vector &vecScale )
 {
 	CPhysCollide **pSolids = new CPhysCollide * [pIn->solidCount];
 	for ( unsigned short i = 0; i < pIn->solidCount; i++ )
 	{
 		const JPH::Shape* pShape = pIn->solids[i]->ToShape();
 
-		pSolids[i] = CPhysCollide::FromShape( ToDanglingRef( pShape->ScaleShape( JPH::Vec3::sReplicate( flScale ) ).Get() ) );
+		pSolids[i] = CPhysCollide::FromShape( ToDanglingRef( pShape->ScaleShape( SourceToJolt::Unitless( vecScale ) ).Get() ) );
 	}
 
 	char *pKeyValues = new char[ pIn->descSize ];
