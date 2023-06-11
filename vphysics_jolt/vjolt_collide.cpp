@@ -340,7 +340,7 @@ int JoltPhysicsCollision::GetConvexesUsedInCollideable( const CPhysCollide *pCol
 	const JPH::StaticCompoundShape *pCompoundShape = static_cast<const JPH::StaticCompoundShape *>( pShape );
 	const JPH::StaticCompoundShape::SubShapes &subShapes = pCompoundShape->GetSubShapes();
 
-	const uint maxNumShapes = Min<uint>( pCompoundShape->GetNumSubShapes(), iOutputArrayLimit );
+	const uint maxNumShapes = Min<uint, uint>( pCompoundShape->GetNumSubShapes(), iOutputArrayLimit );
 	for ( uint i = 0; i < maxNumShapes; ++i )
 		pOutputArray[i] = const_cast<CPhysConvex *>( CPhysConvex::FromConvexShape( static_cast<const JPH::ConvexShape *>( subShapes[i].mShape.GetPtr() ) ) );
 
