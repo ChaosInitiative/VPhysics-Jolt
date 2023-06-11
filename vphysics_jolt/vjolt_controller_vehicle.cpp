@@ -408,7 +408,7 @@ void JoltPhysicsVehicleController::CreateWheel( JPH::VehicleConstraintSettings &
 
 	JPH::WheelSettingsWV *wheelSettings = new JPH::WheelSettingsWV;
 	wheelSettings->mPosition			= SourceToJolt::Distance( wheelPositionLocal );
-	wheelSettings->mSuspensionDirection = JPH::Vec3( 0, 0, -1 );
+	wheelSettings->mSuspensionDirection	= JPH::Vec3( 0, 0, -1 );
 	wheelSettings->mSteeringAxis		= JPH::Vec3( 0, 0, 1 );
 	wheelSettings->mWheelUp				= JPH::Vec3( 0, 0, 1 );
 	wheelSettings->mWheelForward		= JPH::Vec3( 0, 1, 0 );
