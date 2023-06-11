@@ -544,12 +544,17 @@ void JoltPhysicsObject::GetVelocityAtPoint( const Vector &worldPosition, Vector 
 
 void JoltPhysicsObject::GetImplicitVelocity( Vector *velocity, AngularImpulse *angularVelocity ) const
 {
-	Log_Stub( LOG_VJolt );
-	if ( velocity )
-		*velocity = vec3_origin;
+	const JPH::BodyLockInterfaceNoLock &bodyLockInterface = m_pPhysicsSystem->GetBodyLockInterfaceNoLock();
 
-	if ( angularVelocity )
-		*angularVelocity = vec3_origin;
+	JPH::BodyLockRead lock( bodyLockInterface, m_pBody->GetID() );
+	if ( lock.Succeeded() )
+	{
+		const JPH::Body &body = lock.GetBody();
+		 if ( velocity )
+			 *velocity = JoltToSource::Distance( body.GetLinearVelocity() );
+		 if ( angularVelocity )
+			 *angularVelocity = JoltToSource::AngularImpulse( body.GetAngularVelocity() );
+	}
 }
 
 void JoltPhysicsObject::LocalToWorld( Vector *worldPosition, const Vector &localPosition ) const
