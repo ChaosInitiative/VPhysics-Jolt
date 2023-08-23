@@ -707,7 +707,7 @@ void JoltPhysicsCollision::VCollideLoad( vcollide_t *pOutput, int solidCount, co
 	if ( swap )
 	{
 		Log_Error( LOG_VJolt, "If you got here. Tell me what you did!\n" );
-		return 0;
+		return;
 	}
 
 	pOutput->solidCount = solidCount;
@@ -782,7 +782,7 @@ int JoltPhysicsCollision::CollideWrite( char *pDest, CPhysCollide *pCollide, boo
 	if ( bSwap )
 	{
 		Log_Error( LOG_VJolt, "If you got here. Tell me what you did!\n" );
-		return;
+		return 0;
 	}
 
 	struct Writer : JPH::StreamOut, CUtlBuffer
@@ -813,7 +813,7 @@ int JoltPhysicsCollision::CollideWrite( char *pDest, CPhysCollide *pCollide, boo
 	return writer.TellMaxPut();
 }
 
-CPhysCollide *JoltPhysicsCollision::UnserializeCollide( const char *pBuffer, int size, int index )
+CPhysCollide *JoltPhysicsCollision::UnserializeCollide( char *pBuffer, int size, int index )
 {
 	return ivp_compat::Deserialize( pBuffer, size, index );
 }
