@@ -373,9 +373,10 @@ namespace ivp_compat
 		float	upper_limit_radius;
 
 		unsigned int	max_factor_surface_deviation	: 8;
-		int		        byte_size						: 24;
+		int		        byte_size_old					: 24;
+		int		        byte_size;
 		int		        offset_ledgetree_root;
-		int		        dummy[3];
+		int		        dummy[2];
 	};
 
 	struct compactmopp_t
@@ -392,14 +393,47 @@ namespace ivp_compat
 		int	         dummy;
 	};
 
-	struct compactledge_t
+	struct compactedge_old_t
+	{
+		uint    start_point_index	: 16;
+		int		opposite_index		: 15;
+		uint	is_virtual			: 1;
+	};
+
+	struct compacttriangle_old_t
+	{
+		uint	tri_index		: 12;
+		uint	pierce_index	: 12;
+		uint	material_index	: 7;
+		uint	is_virtual		: 1;
+		compactedge_old_t c_three_edges[3];
+	};
+
+	struct alignas( 16 ) compactedge_t
+	{
+		uint    start_point_index;
+		int		opposite_index;
+		uint	is_virtual : 1;
+	};
+
+	struct alignas( 64 ) compacttriangle_t
+	{
+		uint	tri_index;
+		uint	pierce_index;
+		uint	material_index;
+		uint	is_virtual : 1;
+		compactedge_t c_three_edges[3];
+	};
+
+	template <bool aligned>
+	struct alignas( aligned ? 64 : 4 ) compactledge_t
 	{
 		int		c_point_offset;
 
 		union
 		{
 			int	ledgetree_node_offset;
-			int	client_data;
+			unsigned int	client_data;
 		};
 
 		struct
@@ -407,27 +441,16 @@ namespace ivp_compat
 			uint	has_children_flag	: 2;
 			int		is_compact_flag		: 2;
 			uint	dummy				: 4;
-			uint	size_div_16			: 24; 
+			uint	size_div_16			: 24;
 		};
 
 		short	n_triangles;
 		short	for_future_use;
-	};
 
-	struct compactedge_t
-	{
-		uint    start_point_index	: 16;
-		int		opposite_index		: 15;
-		uint	is_virtual			: 1;
-	};
-
-	struct compacttriangle_t
-	{
-		uint	tri_index		: 12;
-		uint	pierce_index	: 12;
-		uint	material_index	: 7;
-		uint	is_virtual		: 1;
-		compactedge_t c_three_edges[3];
+		auto Triangles() const
+		{
+			return reinterpret_cast<const std::conditional_t<aligned, compacttriangle_t, compacttriangle_old_t> *>( this + 1 );
+		}
 	};
 
 	struct compactledgenode_t
@@ -439,10 +462,11 @@ namespace ivp_compat
 		unsigned char box_sizes[3];
 		unsigned char free_0;
 
-		const compactledge_t *GetCompactLedge() const
+		template <bool aligned>
+		const compactledge_t<aligned> *GetCompactLedge() const
 		{
 			VJoltAssert( this->offset_right_node == 0 );
-			return ( compactledge_t * )( ( char * )this + this->offset_compact_ledge );
+			return ( compactledge_t<aligned> * )( ( char * )this + this->offset_compact_ledge );
 		}
 
 		const compactledgenode_t *GetLeftChild() const
@@ -462,10 +486,11 @@ namespace ivp_compat
 			return this->offset_right_node == 0;
 		}
 
-		const compactledge_t *GetCompactHull() const
+		template <bool aligned>
+		const compactledge_t<aligned> *GetCompactHull() const
 		{
 			if ( this->offset_compact_ledge )
-				return ( compactledge_t * )( ( char * )this + this->offset_compact_ledge );
+				return ( compactledge_t<aligned> * )( ( char * )this + this->offset_compact_ledge );
 			else
 				return nullptr;
 		}
@@ -477,7 +502,8 @@ namespace ivp_compat
 	static constexpr int	IVP_COMPACT_MOPP_ID					= MAKEID('M','O','P','P');
 	static constexpr int	VPHYSICS_COLLISION_ID				= MAKEID('V','P','H','Y');
 	static constexpr int	JOLT_COLLISION_ID					= MAKEID('J','P','H','Y');
-	static constexpr short	VPHYSICS_COLLISION_VERSION			= 0x0100;
+	static constexpr short	VPHYSICS_COLLISION_VERSION_OLD		= 0x0100;
+	static constexpr short	VPHYSICS_COLLISION_VERSION			= 0x0101;
 
 	enum
 	{
@@ -487,13 +513,14 @@ namespace ivp_compat
 		COLLIDE_VIRTUAL = 3,
 	};
 
-	JPH::ConvexShape *IVPLedgeToConvexShape( const compactledge_t *pLedge, uint64 userData )
+	template <bool aligned>
+	JPH::ConvexShape *IVPLedgeToConvexShape( const compactledge_t<aligned> *pLedge, uint64 userData )
 	{
 		if ( !pLedge->n_triangles )
 			return nullptr;
 
 		const char *pVertices = reinterpret_cast< const char * >( pLedge ) + pLedge->c_point_offset;
-		const compacttriangle_t *pTriangles = reinterpret_cast< const compacttriangle_t * >( pLedge + 1 );
+		const auto *pTriangles = pLedge->Triangles();
 
 		const int nVertCount = pLedge->n_triangles * 3;
 
@@ -532,12 +559,13 @@ namespace ivp_compat
 				return nullptr;
 			}
 		}
-		
+
 		pConvexShape->SetUserData( pLedge->client_data | userData );
 		return pConvexShape;
 	}
 
-	void GetAllIVPEdges( const compactledgenode_t *pNode, CUtlVector< const compactledge_t * >& vecOut )
+	template <bool aligned>
+	void GetAllIVPEdges( const compactledgenode_t *pNode, CUtlVector< const compactledge_t<aligned> * >& vecOut )
 	{
 		if ( !pNode )
 			return;
@@ -548,15 +576,17 @@ namespace ivp_compat
 			GetAllIVPEdges( pNode->GetLeftChild(), vecOut );
 		}
 		else
-			vecOut.AddToTail( pNode->GetCompactLedge() );
+			vecOut.AddToTail( pNode->GetCompactLedge<aligned>() );
 	}
 
-	CPhysCollide *DeserializeIVP_Poly( const compactsurface_t* pSurface, uint64 userData )
+	template <bool aligned>
+	CPhysCollide *DeserializeIVP_Poly( const compactsurface_t *pSurface, uint64 userData )
 	{
+		const int offset = aligned ? pSurface->offset_ledgetree_root : pSurface->byte_size;
 		const compactledgenode_t *pFirstLedgeNode = reinterpret_cast< const compactledgenode_t * >(
-				reinterpret_cast< const char * >( pSurface ) + pSurface->offset_ledgetree_root );
+				reinterpret_cast< const char * >( pSurface ) + offset );
 
-		CUtlVector< const compactledge_t * > ledges;
+		CUtlVector<const compactledge_t<aligned> *> ledges;
 		GetAllIVPEdges( pFirstLedgeNode, ledges );
 
 		VJoltAssert( !ledges.IsEmpty() );
@@ -590,7 +620,7 @@ namespace ivp_compat
 		const compactsurfaceheader_t *pSurfaceHeader = reinterpret_cast< const compactsurfaceheader_t* >( pCollideHeader + 1 );
 		const compactsurface_t *pSurface = reinterpret_cast< const compactsurface_t* >( pSurfaceHeader + 1 );
 
-		return DeserializeIVP_Poly( pSurface, userData );
+		return pSurface->byte_size_old ? DeserializeIVP_Poly<false>( pSurface, userData ) : DeserializeIVP_Poly<true>( pSurface, userData );
 	}
 
 	CPhysCollide *Deserialize( const char *pCursor, int solidSize, unsigned int i )
@@ -603,7 +633,7 @@ namespace ivp_compat
 			// This is the main path that everything falls down for a modern
 			// .phy file with the collide header.
 
-			if ( pCollideHeader->version != VPHYSICS_COLLISION_VERSION )
+			if ( pCollideHeader->version != VPHYSICS_COLLISION_VERSION_OLD && pCollideHeader->version != VPHYSICS_COLLISION_VERSION )
 				Log_Warning( LOG_VJolt, "Solid with unknown version: 0x%x, may crash!\n", pCollideHeader->version );
 
 			switch ( pCollideHeader->modelType )
@@ -680,13 +710,13 @@ namespace ivp_compat
 			// .qc had the $collisionmodel removed, as they didn't get the stale .phy in the game files deleted.
 
 			const compactsurface_t *pCompactSurface = reinterpret_cast<const compactsurface_t *>( pCursor );
-			const int legacyModelType = pCompactSurface->dummy[2];
+			const int legacyModelType = pCompactSurface->dummy[1];
 			switch ( legacyModelType )
 			{
 				case IVP_COMPACT_SURFACE_SUPER_LEGACY:
 				case IVP_COMPACT_SURFACE_ID:
 				case IVP_COMPACT_SURFACE_ID_SWAPPED:
-					return DeserializeIVP_Poly( pCompactSurface, userData );
+					return pCompactSurface->byte_size_old ? DeserializeIVP_Poly<false>( pCompactSurface, userData ) : DeserializeIVP_Poly<true>( pCompactSurface, userData );
 					break;
 
 				case IVP_COMPACT_MOPP_ID:
@@ -694,7 +724,7 @@ namespace ivp_compat
 					break;
 
 				default:
-					Log_Warning( LOG_VJolt, "Unsupported legacy solid type 0x%x on solid %d. Skipping...\n", legacyModelType, i);
+					Log_Warning( LOG_VJolt, "Unsupported legacy solid type 0x%x on solid %d. Skipping...\n", legacyModelType, i );
 					break;
 			}
 		}
