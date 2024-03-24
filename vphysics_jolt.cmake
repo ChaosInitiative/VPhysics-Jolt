@@ -7,7 +7,6 @@ set(
 	VPHYSICSJOLT_SOURCE_FILES
 
 	"${SRCDIR}/public/collisionutils.cpp"
-	"${SRCDIR}/public/filesystem_helpers.cpp"
 
 	"${VPHYSICSJOLT_DIR}/vjolt_collide.cpp"
 	"${VPHYSICSJOLT_DIR}/vjolt_collide_trace.cpp"
